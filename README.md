@@ -3,8 +3,8 @@
 A standalone Java UNO-like command-line game.
 
 This project is configured as a Maven application. Maven compiles the game,
-runs the characterization tests, packages an executable JAR, and can launch the
-CLI without manual classpath setup.
+runs the characterization and persistence tests, packages an executable JAR,
+and can launch the CLI without manual classpath setup.
 
 ## Requirements
 
@@ -25,7 +25,7 @@ mvn test
 ```
 
 The Maven test phase runs the existing characterization test suite through
-JUnit.
+JUnit and runs MyBatis repository tests against isolated in-memory H2 databases.
 
 ## Local Run
 
@@ -58,6 +58,8 @@ W    wild
 W4   wild draw four
 draw draw a card
 ```
+
+Completed games are persisted to H2 automatically.
 
 ## Package Creation
 
@@ -103,6 +105,12 @@ Run an interactive game:
 docker run --rm -it uno-cli --human --bots 2 --games 1
 ```
 
+Persist Docker history on the host:
+
+```bash
+docker run --rm -v uno-data:/app/data uno-cli --bots 3 --games 5 --quiet --seed 42
+```
+
 ## Logging
 
 The game uses `java.util.logging` for diagnostic events while keeping normal
@@ -114,6 +122,42 @@ Application logs are written to:
 ```text
 uno.log
 ```
+
+## Database And Reports
+
+The project uses MyBatis with H2. Schema setup runs automatically from:
+
+```text
+src/main/resources/db/schema.sql
+```
+
+Default database:
+
+```text
+jdbc:h2:file:./data/uno;AUTO_SERVER=TRUE
+```
+
+Override the database URL with `UNO_DB_URL` or the JVM property `uno.db.url`.
+
+List recent games:
+
+```bash
+mvn exec:java -Dexec.args="--recent-games --limit 10"
+```
+
+Show player win counts:
+
+```bash
+mvn exec:java -Dexec.args="--player-wins"
+```
+
+Show highest scores:
+
+```bash
+mvn exec:java -Dexec.args="--highest-scores --limit 10"
+```
+
+More detail is in [docs/database.md](docs/database.md).
 
 ## Legacy Helper Scripts
 

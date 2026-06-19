@@ -1,5 +1,6 @@
 target/
 out/
+data/
 .git/
 .idea/
 *.log

@@ -12,5 +12,7 @@ WORKDIR /app
 
 COPY --from=build /app/target/uno-cli-1.0.0.jar app.jar
 
+ENV UNO_DB_URL=jdbc:h2:file:/app/data/uno
+
 ENTRYPOINT ["java", "-jar", "app.jar"]
 CMD ["--bots", "3", "--games", "1"]

@@ -1,5 +1,8 @@
+package uno;
+
 import java.util.ArrayList;
 import java.util.Scanner;
+import java.util.logging.Logger;
 
 /**
  * Handles all console input and output.
@@ -9,6 +12,8 @@ import java.util.Scanner;
  * touching stdin or stdout.
  */
 public class ConsoleView {
+
+    private static final Logger LOGGER = Logger.getLogger(ConsoleView.class.getName());
 
     private final Scanner scanner;
     private final boolean quiet;
@@ -108,13 +113,19 @@ public class ConsoleView {
                 return PlayChoice.invalid();   // out-of-range index -> penalty
             } catch (NumberFormatException ignored) {}
 
+            boolean foundToken = false;
             for (int i = 0; i < hand.size(); i++) {
                 if (hand.get(i).token.equals(input)) {
+                    foundToken = true;
                     if (rules.isLegal(hand.get(i), upCard, calledColor)) return PlayChoice.play(i);
+                    LOGGER.warning("Invalid input: human selected illegal card token " + input);
                     if (!quiet) System.out.println("That card is not legal.");
                 }
             }
-            if (!quiet) System.out.println("Card not found.");
+            if (!foundToken) {
+                LOGGER.warning("Invalid input: human entered unknown card token " + input);
+                if (!quiet) System.out.println("Card not found.");
+            }
         }
     }
 
@@ -130,6 +141,7 @@ public class ConsoleView {
             String input = scanner.nextLine().trim().toUpperCase();
             if (input.equals("R") || input.equals("Y")
                     || input.equals("G") || input.equals("B")) return input;
+            LOGGER.warning("Invalid input: human entered bad color " + input);
             if (!quiet) System.out.println("Bad color.");
         }
     }

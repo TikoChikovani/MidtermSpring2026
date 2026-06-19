@@ -1,3 +1,5 @@
+package uno;
+
 /**
  * Strategy interface for the side-effect a card has on game state
  * after it is legally played.

@@ -1,4 +1,7 @@
+package uno;
+
 import java.util.ArrayList;
+import java.util.logging.Logger;
 
 /**
  * Runs one UNO game by coordinating GameState (rules/data) and ConsoleView (I/O).
@@ -7,6 +10,8 @@ import java.util.ArrayList;
  * Card effects are delegated to card.effect().apply(state) -- no switch needed here.
  */
 public class GameController {
+
+    private static final Logger LOGGER = Logger.getLogger(GameController.class.getName());
 
     private final GameState   state;
     private final ConsoleView view;
@@ -30,6 +35,9 @@ public class GameController {
      */
     public int playGame() {
         state.reset();
+        LOGGER.info("Game start: players=" + state.playerNames.size()
+                + ", startingPlayer=" + state.currentName()
+                + ", upCard=" + state.upCard);
 
         for (int guard = 0; guard < 3000; guard++) {
             int winner = playTurn();
@@ -37,6 +45,7 @@ public class GameController {
         }
 
         view.showSafetyLimit();
+        LOGGER.warning("Game end: safety limit reached");
         return -1;
     }
 
@@ -44,6 +53,9 @@ public class GameController {
 
     int playTurn() {
         view.showTurnHeader(state);
+        LOGGER.info("Player turn: player=" + state.currentName()
+                + ", upCard=" + state.upCard
+                + (state.calledColor.equals("") ? "" : ", calledColor=" + state.calledColor));
 
         PlayChoice choice = chooseTurn();
 
@@ -89,6 +101,7 @@ public class GameController {
         Card drawn = state.drawCard();
         state.currentHand().add(drawn);
         view.showDraw(state.currentName(), drawn);
+        LOGGER.info("Card drawn: player=" + state.currentName() + ", card=" + drawn);
 
         if (rules.isLegal(drawn, state.upCard, state.calledColor)) {
             boolean willPlay = state.currentIsHuman()
@@ -102,13 +115,20 @@ public class GameController {
 
     void handleInvalidChoice() {
         view.showPenaltyInvalidIndex(state.currentName());
-        state.currentHand().add(state.drawCard());
+        Card penalty = state.drawCard();
+        state.currentHand().add(penalty);
+        LOGGER.warning("Invalid input: player=" + state.currentName()
+                + ", penaltyCard=" + penalty);
         state.nextPlayer();
     }
 
     void handleIllegalPlay(Card card) {
         view.showPenaltyIllegal(state.currentName(), card);
-        state.currentHand().add(state.drawCard());
+        Card penalty = state.drawCard();
+        state.currentHand().add(penalty);
+        LOGGER.warning("Invalid input: illegal card by player=" + state.currentName()
+                + ", card=" + card
+                + ", penaltyCard=" + penalty);
         state.nextPlayer();
     }
 
@@ -119,6 +139,7 @@ public class GameController {
         state.upCard      = card;
         state.calledColor = "";
         view.showPlay(state.currentName(), card);
+        LOGGER.info("Card played: player=" + state.currentName() + ", card=" + card);
 
         if (card.isWild()) {
             String color = state.currentIsHuman()
@@ -138,6 +159,9 @@ public class GameController {
         int points = scorer.scoreOtherHands(state, winner);
         state.scores[winner] += points;
         view.showWin(state.currentName(), points);
+        LOGGER.info("Round end: winner=" + state.currentName()
+                + ", points=" + points
+                + ", totalScore=" + state.scores[winner]);
         return winner;
     }
 

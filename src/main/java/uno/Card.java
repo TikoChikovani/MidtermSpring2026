@@ -1,3 +1,5 @@
+package uno;
+
 /**
  * Value object representing a single UNO card.
  *

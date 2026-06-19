@@ -1,5 +1,8 @@
+package uno;
+
 import java.util.Random;
 import java.util.ArrayList;
+import java.util.logging.Logger;
 
 /**
  * Entry point. Parses CLI arguments, wires up the collaborators, and runs games.
@@ -10,7 +13,11 @@ import java.util.ArrayList;
  */
 public class Main {
 
+    private static final Logger LOGGER = Logger.getLogger(Main.class.getName());
+
     public static void main(String[] args) {
+        LoggingConfig.configureForApplication();
+
         int     bots   = 3;
         int     games  = 1;
         boolean human  = false;
@@ -23,7 +30,10 @@ public class Main {
             else if (args[i].equals("--human"))    human = true;
             else if (args[i].equals("--quiet"))    quiet = true;
             else if (args[i].equals("--seed") && i + 1 < args.length) seed = Long.parseLong(args[++i]);
-            else if (args[i].equals("--self-test")) { TestLauncher.runAll(); return; }
+            else if (args[i].equals("--self-test")) {
+                System.out.println("Use `mvn test` to run the automated test suite.");
+                return;
+            }
             else if (args[i].equals("--help")) {
                 System.out.println("Usage: scripts/run.sh [--bots N] [--games N] [--human] [--quiet] [--seed N]");
                 return;
@@ -46,10 +56,12 @@ public class Main {
 
         for (int g = 1; g <= games; g++) {
             view.showGameHeader(g);
+            LOGGER.info("Game start requested: gameNumber=" + g);
             ctrl.playGame();
         }
 
         view.showFinalScores(names, scores);
+        LOGGER.info("Game end: completedGames=" + games);
     }
 
     // ---- player setup ----

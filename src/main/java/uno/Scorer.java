@@ -1,3 +1,5 @@
+package uno;
+
 /**
  * Calculates end-of-round points.
  */

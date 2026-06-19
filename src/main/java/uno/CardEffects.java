@@ -1,3 +1,5 @@
+package uno;
+
 /**
  * Concrete CardEffect implementations, one per distinct UNO card behavior.
  *

@@ -1,3 +1,5 @@
+package uno;
+
 import java.util.ArrayList;
 
 /**
@@ -10,6 +12,8 @@ public class TestLauncher {
     }
 
     public static void runAll() {
+        LoggingConfig.disableForTests();
+
         int unitPassed = runUnitChecks();
         int charPassed = CharacterizationTests.run();
 

@@ -1,6 +1,5 @@
 #!/usr/bin/env sh
 set -eu
 
-scripts/compile.sh
-java -cp out Main "$@"
+mvn -q exec:java -Dexec.args="$*"
 

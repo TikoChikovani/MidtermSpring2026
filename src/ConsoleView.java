@@ -10,10 +10,23 @@ import java.util.Scanner;
  */
 public class ConsoleView {
 
-    private final Scanner scanner = new Scanner(System.in);
+    private final Scanner scanner;
     private final boolean quiet;
+    private final RuleSet rules;
 
-    public ConsoleView(boolean quiet) { this.quiet = quiet; }
+    public ConsoleView(boolean quiet) {
+        this(quiet, new Scanner(System.in), new RuleSet());
+    }
+
+    public ConsoleView(boolean quiet, Scanner scanner) {
+        this(quiet, scanner, new RuleSet());
+    }
+
+    public ConsoleView(boolean quiet, Scanner scanner, RuleSet rules) {
+        this.quiet = quiet;
+        this.scanner = scanner;
+        this.rules = rules;
+    }
 
     // ---- Output ----
 
@@ -84,7 +97,7 @@ public class ConsoleView {
      */
     public PlayChoice askHuman(ArrayList<Card> hand, Card upCard, String calledColor) {
         while (true) {
-            System.out.print("Choose card index/code or draw: ");
+            if (!quiet) System.out.print("Choose card index/code or draw: ");
             String input = scanner.nextLine().trim().toUpperCase();
 
             if (input.equals("DRAW")) return PlayChoice.draw();
@@ -97,27 +110,27 @@ public class ConsoleView {
 
             for (int i = 0; i < hand.size(); i++) {
                 if (hand.get(i).token.equals(input)) {
-                    if (Rules.isLegal(hand.get(i), upCard, calledColor)) return PlayChoice.play(i);
-                    System.out.println("That card is not legal.");
+                    if (rules.isLegal(hand.get(i), upCard, calledColor)) return PlayChoice.play(i);
+                    if (!quiet) System.out.println("That card is not legal.");
                 }
             }
-            System.out.println("Card not found.");
+            if (!quiet) System.out.println("Card not found.");
         }
     }
 
     public boolean askPlayDrawn(Card drawn) {
-        System.out.print("Play drawn card " + drawn + "? y/n: ");
+        if (!quiet) System.out.print("Play drawn card " + drawn + "? y/n: ");
         String answer = scanner.nextLine();
         return answer.equalsIgnoreCase("y") || answer.equalsIgnoreCase("yes");
     }
 
     public String askColor() {
         while (true) {
-            System.out.print("Call color R/Y/G/B: ");
+            if (!quiet) System.out.print("Call color R/Y/G/B: ");
             String input = scanner.nextLine().trim().toUpperCase();
             if (input.equals("R") || input.equals("Y")
                     || input.equals("G") || input.equals("B")) return input;
-            System.out.println("Bad color.");
+            if (!quiet) System.out.println("Bad color.");
         }
     }
 

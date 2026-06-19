@@ -1,5 +1,6 @@
 import java.util.ArrayList;
 import java.util.Random;
+import java.util.Scanner;
 
 /**
  * Characterization tests for gameplay effects.
@@ -162,9 +163,124 @@ public class CharacterizationTests {
                 if (i != 0) for (Card c : s.hands.get(i)) total += c.points();
             assertEquals("score sums all opponents", 75, total);
         }
+        {
+            GameState s = threePlayerState(12);
+            s.hands.get(0).clear();
+            s.hands.get(1).clear();
+            s.hands.get(1).add(card("R4"));
+            s.hands.get(1).add(card("W"));
+            s.hands.get(2).clear();
+            s.hands.get(2).add(card("G+2"));
+            assertEquals("Scorer sums non-winner hands", 74, new Scorer().scoreOtherHands(s, 0));
+        }
 
         // ----------------------------------------------------------------
-        // 11. BOT PRIORITY -- surprising edge case
+        // 11. CONTROLLER TURN STEPS
+        // ----------------------------------------------------------------
+        {
+            GameState s = threePlayerState(20);
+            s.hands.get(0).clear();
+            s.hands.get(0).add(card("G3"));
+            s.hands.get(0).add(card("R7"));
+            GameController ctrl = new GameController(s, new ConsoleView(true));
+            PlayChoice choice = ctrl.chooseTurn();
+            check("chooseTurn returns bot play", choice.kind == PlayChoice.Kind.PLAY && choice.index == 1);
+        }
+        {
+            GameState s = threePlayerState(21);
+            s.hands.get(0).clear();
+            s.deck.clear();
+            s.deck.add(card("R7"));
+            GameController ctrl = new GameController(s, new ConsoleView(true));
+            PlayChoice choice = ctrl.handleDrawChoice(PlayChoice.draw());
+            check("draw handling plays legal bot draw",
+                  choice.kind == PlayChoice.Kind.PLAY && choice.index == 0);
+            assertEquals("draw handling adds drawn card to hand", 1, s.currentHand().size());
+        }
+        {
+            GameState s = threePlayerState(22);
+            s.hands.get(0).clear();
+            s.hands.get(0).add(card("R7"));
+            s.hands.get(0).add(card("G2"));
+            GameController ctrl = new GameController(s, new ConsoleView(true));
+            ctrl.applyPlay(0, s.currentHand().get(0));
+            check("applyPlay updates up card", s.upCard.token.equals("R7"));
+            check("applyPlay discards old up card", s.discard.get(s.discard.size() - 1).token.equals("R5"));
+            assertEquals("applyPlay removes card from hand", 1, s.currentHand().size());
+        }
+        {
+            GameState s = threePlayerState(23);
+            s.currentPlayer = 0;
+            s.hands.get(0).clear();
+            s.hands.get(1).clear();
+            s.hands.get(1).add(card("R5"));
+            s.hands.get(2).clear();
+            s.hands.get(2).add(card("W4"));
+            GameController ctrl = new GameController(s, new ConsoleView(true));
+            int winner = ctrl.handleWinIfNeeded();
+            assertEquals("win handling returns winner", 0, winner);
+            assertEquals("win handling adds score", 55, s.scores[0]);
+        }
+        {
+            GameState s = threePlayerState(24);
+            int start = s.currentPlayer;
+            GameController ctrl = new GameController(s, new ConsoleView(true));
+            ctrl.handleUnplayedDraw();
+            check("unplayed draw advances player", s.currentPlayer == (start + 1) % 3);
+        }
+
+        // ----------------------------------------------------------------
+        // 12. SCRIPTED HUMAN INPUT
+        // ----------------------------------------------------------------
+        {
+            ArrayList<Card> h = new ArrayList<>();
+            h.add(card("R5"));
+            ConsoleView view = new ConsoleView(true, new Scanner("draw\n"));
+            check("human input draw command", view.askHuman(h, card("R9"), "").kind == PlayChoice.Kind.DRAW);
+        }
+        {
+            ArrayList<Card> h = new ArrayList<>();
+            h.add(card("R5"));
+            h.add(card("G2"));
+            ConsoleView view = new ConsoleView(true, new Scanner("R5\n"));
+            PlayChoice choice = view.askHuman(h, card("R9"), "");
+            check("human input card token chooses legal card",
+                  choice.kind == PlayChoice.Kind.PLAY && choice.index == 0);
+        }
+        {
+            ArrayList<Card> h = new ArrayList<>();
+            h.add(card("R5"));
+            ConsoleView view = new ConsoleView(true, new Scanner("9\n"));
+            check("human input bad index returns invalid",
+                  view.askHuman(h, card("R9"), "").kind == PlayChoice.Kind.INVALID);
+        }
+        {
+            ConsoleView view = new ConsoleView(true, new Scanner("yes\n"));
+            check("human input says yes to drawn card", view.askPlayDrawn(card("R5")));
+        }
+        {
+            ConsoleView view = new ConsoleView(true, new Scanner("x\nb\n"));
+            check("human input retries color until valid", view.askColor().equals("B"));
+        }
+
+        // ----------------------------------------------------------------
+        // 13. INJECTABLE RULE SET
+        // ----------------------------------------------------------------
+        {
+            RuleSet allCardsLegal = new RuleSet() {
+                @Override public boolean isLegal(Card card, Card upCard, String calledColor) {
+                    return true;
+                }
+            };
+            ArrayList<Card> h = new ArrayList<>();
+            h.add(card("G2"));
+            ConsoleView view = new ConsoleView(true, new Scanner("G2\n"), allCardsLegal);
+            PlayChoice choice = view.askHuman(h, card("R9"), "");
+            check("ConsoleView uses injected rule set", choice.kind == PlayChoice.Kind.PLAY);
+        }
+
+        // ----------------------------------------------------------------
+        // 14. BOT PRIORITY -- surprising edge case
         // ----------------------------------------------------------------
         {
             ArrayList<Card> h = new ArrayList<>();
@@ -186,7 +302,7 @@ public class CharacterizationTests {
         }
 
         // ----------------------------------------------------------------
-        // 12. END-TO-END GAMEPLAY -- full game with seeded RNG
+        // 15. END-TO-END GAMEPLAY -- full game with seeded RNG
         // ----------------------------------------------------------------
         {
             // A complete bot-only game must finish within the safety limit

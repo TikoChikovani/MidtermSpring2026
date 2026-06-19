@@ -22,15 +22,25 @@ public class GameState {
     public String  calledColor   = "";
 
     private final Random random;
+    private final RuleSet rules;
 
     public GameState(ArrayList<String> playerNames,
                      ArrayList<Boolean> humanPlayers,
                      int[] scores,
                      Random random) {
+        this(playerNames, humanPlayers, scores, random, new RuleSet());
+    }
+
+    public GameState(ArrayList<String> playerNames,
+                     ArrayList<Boolean> humanPlayers,
+                     int[] scores,
+                     Random random,
+                     RuleSet rules) {
         this.playerNames  = playerNames;
         this.humanPlayers = humanPlayers;
         this.scores       = scores;
         this.random       = random;
+        this.rules        = rules;
         this.hands        = new ArrayList<>();
         for (int i = 0; i < playerNames.size(); i++) {
             hands.add(new ArrayList<>());
@@ -40,7 +50,7 @@ public class GameState {
     /** Sets up a fresh game: shuffle deck, deal hands, choose starting card. */
     public void reset() {
         deck.clear();
-        deck.addAll(Rules.buildDeck(random));
+        deck.addAll(rules.buildDeck(random));
         discard.clear();
         for (ArrayList<Card> hand : hands) hand.clear();
 

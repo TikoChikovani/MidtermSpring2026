@@ -74,7 +74,7 @@ public class GameController {
                 return -1;
             }
 
-            applyPlay(choice.index, card);
+            applyPlay(choice, card);
 
             int winner = handleWinIfNeeded();
             if (winner >= 0) return winner;
@@ -92,7 +92,10 @@ public class GameController {
             return view.askHuman(state.currentHand(), state.upCard, state.calledColor);
         }
         int idx = rules.chooseBotCard(state.currentHand(), state.upCard, state.calledColor);
-        return idx >= 0 ? PlayChoice.play(idx) : PlayChoice.draw();
+        if (idx < 0) return PlayChoice.draw();
+
+        boolean willHaveOneCard = state.currentHand().size() == 2;
+        return PlayChoice.play(idx, willHaveOneCard);
     }
 
     PlayChoice handleDrawChoice(PlayChoice choice) {
@@ -107,7 +110,7 @@ public class GameController {
             boolean willPlay = state.currentIsHuman()
                     ? view.askPlayDrawn(drawn)
                     : true;
-            if (willPlay) return PlayChoice.play(state.currentHand().size() - 1);
+            if (willPlay) return PlayChoice.play(state.currentHand().size() - 1, state.currentHand().size() == 2);
         }
 
         return choice;
@@ -134,6 +137,12 @@ public class GameController {
 
     /** Removes the card from hand, updates upCard, handles wild colour call. */
     void applyPlay(int index, Card card) {
+        applyPlay(PlayChoice.play(index, true), card);
+    }
+
+    /** Removes the card from hand, updates upCard, handles wild colour call and UNO state. */
+    void applyPlay(PlayChoice choice, Card card) {
+        int index = choice.index;
         state.currentHand().remove(index);
         state.discard.add(state.upCard);
         state.upCard      = card;
@@ -149,7 +158,20 @@ public class GameController {
             view.showColorCall(state.currentName(), color);
         }
 
-        if (state.currentHand().size() == 1) view.showUno(state.currentName());
+        if (state.currentHand().size() == 1) {
+            if (choice.unoCalled) {
+                view.showUno(state.currentName());
+            } else {
+                applyMissedUnoPenalty();
+            }
+        }
+    }
+
+    void applyMissedUnoPenalty() {
+        view.showMissedUnoPenalty(state.currentName());
+        state.currentHand().add(state.drawCard());
+        state.currentHand().add(state.drawCard());
+        LOGGER.warning("Missed UNO: player=" + state.currentName() + ", penaltyCards=2");
     }
 
     int handleWinIfNeeded() {

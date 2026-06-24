@@ -25,21 +25,36 @@ public class CharacterizationTests {
     private int runAll() {
 
         // ----------------------------------------------------------------
-        // 1. MATCHING BY COLOR
+        // 1. DECK COMPOSITION
+        // ----------------------------------------------------------------
+        {
+            ArrayList<Card> deck = Rules.buildDeck(new Random(1));
+            assertEquals("deck has 108 cards", 108, deck.size());
+            assertEquals("deck has one R0", 1, count(deck, "R0"));
+            assertEquals("deck has two R9", 2, count(deck, "R9"));
+            assertEquals("deck has two skips per color", 2, count(deck, "YS"));
+            assertEquals("deck has two reverses per color", 2, count(deck, "BR"));
+            assertEquals("deck has two draw twos per color", 2, count(deck, "G+2"));
+            assertEquals("deck has four wilds", 4, count(deck, "W"));
+            assertEquals("deck has four wild draw fours", 4, count(deck, "W4"));
+        }
+
+        // ----------------------------------------------------------------
+        // 2. MATCHING BY COLOR
         // ----------------------------------------------------------------
         check("color match: R on R",     Rules.isLegal(card("R2"), card("R9"), ""));
         check("color match: Y on Y",     Rules.isLegal(card("Y3"), card("Y7"), ""));
         check("no color match: G on R", !Rules.isLegal(card("G2"), card("R9"), ""));
 
         // ----------------------------------------------------------------
-        // 2. MATCHING BY NUMBER
+        // 3. MATCHING BY NUMBER
         // ----------------------------------------------------------------
         check("number match: 9 on 9 diff color", Rules.isLegal(card("G9"), card("R9"), ""));
         check("number match: 0 on 0",             Rules.isLegal(card("B0"), card("R0"), ""));
         check("number mismatch illegal",          !Rules.isLegal(card("G3"), card("R5"), ""));
 
         // ----------------------------------------------------------------
-        // 3. MATCHING BY ACTION TYPE
+        // 4. MATCHING BY ACTION TYPE
         // ----------------------------------------------------------------
         check("SKIP matches SKIP",          Rules.isLegal(card("GS"),  card("RS"),  ""));
         check("REVERSE matches REVERSE",    Rules.isLegal(card("BR"),  card("RR"),  ""));
@@ -47,7 +62,7 @@ public class CharacterizationTests {
         check("SKIP does not match REVERSE",!Rules.isLegal(card("GS"), card("RR"),  ""));
 
         // ----------------------------------------------------------------
-        // 4. WILD AND WILD DRAW FOUR BEHAVIOR
+        // 5. WILD AND WILD DRAW FOUR BEHAVIOR
         // ----------------------------------------------------------------
         check("W always legal",              Rules.isLegal(card("W"),  card("R5"), ""));
         check("W4 always legal",             Rules.isLegal(card("W4"), card("B3"), ""));
@@ -58,7 +73,7 @@ public class CharacterizationTests {
              !Rules.isLegal(card("G3"), card("W"), "B"));
 
         // ----------------------------------------------------------------
-        // 5. SKIP -- effect: next player loses their turn
+        // 6. SKIP -- effect: next player loses their turn
         // ----------------------------------------------------------------
         {
             GameState s = threePlayerState(42);
@@ -68,7 +83,7 @@ public class CharacterizationTests {
         }
 
         // ----------------------------------------------------------------
-        // 6. REVERSE -- effect: direction flips; 2-player acts as skip
+        // 7. REVERSE -- effect: direction flips; 2-player acts as skip
         // ----------------------------------------------------------------
         {
             GameState s = threePlayerState(1);
@@ -92,7 +107,7 @@ public class CharacterizationTests {
         }
 
         // ----------------------------------------------------------------
-        // 7. DRAW TWO -- next player draws 2 and loses their turn
+        // 8. DRAW TWO -- next player draws 2 and loses their turn
         // ----------------------------------------------------------------
         {
             GameState s = threePlayerState(10);
@@ -105,7 +120,7 @@ public class CharacterizationTests {
         }
 
         // ----------------------------------------------------------------
-        // 8. WILD DRAW FOUR -- next player draws 4 and loses their turn
+        // 9. WILD DRAW FOUR -- next player draws 4 and loses their turn
         // ----------------------------------------------------------------
         {
             GameState s = threePlayerState(15);
@@ -118,7 +133,7 @@ public class CharacterizationTests {
         }
 
         // ----------------------------------------------------------------
-        // 9. DRAWING FROM DECK
+        // 10. DRAWING FROM DECK
         // ----------------------------------------------------------------
         {
             GameState s = threePlayerState(5);
@@ -144,7 +159,7 @@ public class CharacterizationTests {
         }
 
         // ----------------------------------------------------------------
-        // 10. SCORING
+        // 11. SCORING
         // ----------------------------------------------------------------
         check("number card points == face value", card("R7").points() == 7);
         check("0 card points == 0",               card("G0").points() == 0);
@@ -177,7 +192,7 @@ public class CharacterizationTests {
         }
 
         // ----------------------------------------------------------------
-        // 11. CONTROLLER TURN STEPS
+        // 12. CONTROLLER TURN STEPS
         // ----------------------------------------------------------------
         {
             GameState s = threePlayerState(20);
@@ -230,9 +245,39 @@ public class CharacterizationTests {
             ctrl.handleUnplayedDraw();
             check("unplayed draw advances player", s.currentPlayer == (start + 1) % 3);
         }
+        {
+            GameState s = threePlayerState(25);
+            s.hands.get(0).clear();
+            s.hands.get(0).add(card("R7"));
+            s.hands.get(0).add(card("G2"));
+            GameController ctrl = new GameController(s, new ConsoleView(true));
+            ctrl.applyPlay(PlayChoice.play(0, true), s.currentHand().get(0));
+            assertEquals("called UNO leaves one-card hand", 1, s.currentHand().size());
+        }
+        {
+            GameState s = threePlayerState(26);
+            s.hands.get(0).clear();
+            s.hands.get(0).add(card("R7"));
+            s.hands.get(0).add(card("G2"));
+            s.deck.clear();
+            s.deck.add(card("B1"));
+            s.deck.add(card("B2"));
+            GameController ctrl = new GameController(s, new ConsoleView(true));
+            ctrl.applyPlay(PlayChoice.play(0, false), s.currentHand().get(0));
+            assertEquals("missed UNO draws two penalty cards", 3, s.currentHand().size());
+        }
+        {
+            GameState s = threePlayerState(27);
+            s.hands.get(0).clear();
+            s.hands.get(0).add(card("R7"));
+            s.hands.get(0).add(card("G2"));
+            GameController ctrl = new GameController(s, new ConsoleView(true));
+            PlayChoice choice = ctrl.chooseTurn();
+            check("bot calls UNO when play leaves one card", choice.kind == PlayChoice.Kind.PLAY && choice.unoCalled);
+        }
 
         // ----------------------------------------------------------------
-        // 12. SCRIPTED HUMAN INPUT
+        // 13. SCRIPTED HUMAN INPUT
         // ----------------------------------------------------------------
         {
             ArrayList<Card> h = new ArrayList<>();
@@ -252,6 +297,15 @@ public class CharacterizationTests {
         {
             ArrayList<Card> h = new ArrayList<>();
             h.add(card("R5"));
+            h.add(card("G2"));
+            ConsoleView view = new ConsoleView(true, new Scanner("R5 UNO\n"));
+            PlayChoice choice = view.askHuman(h, card("R9"), "");
+            check("human input can call UNO with card token",
+                  choice.kind == PlayChoice.Kind.PLAY && choice.index == 0 && choice.unoCalled);
+        }
+        {
+            ArrayList<Card> h = new ArrayList<>();
+            h.add(card("R5"));
             ConsoleView view = new ConsoleView(true, new Scanner("9\n"));
             check("human input bad index returns invalid",
                   view.askHuman(h, card("R9"), "").kind == PlayChoice.Kind.INVALID);
@@ -266,7 +320,7 @@ public class CharacterizationTests {
         }
 
         // ----------------------------------------------------------------
-        // 13. INJECTABLE RULE SET
+        // 14. INJECTABLE RULE SET
         // ----------------------------------------------------------------
         {
             RuleSet allCardsLegal = new RuleSet() {
@@ -282,7 +336,18 @@ public class CharacterizationTests {
         }
 
         // ----------------------------------------------------------------
-        // 14. BOT PRIORITY -- surprising edge case
+        // 15. TARGET SCORE FLOW
+        // ----------------------------------------------------------------
+        {
+            check("target score keeps playing below target",
+                  Main.shouldPlayRound(3, 1, 100, new int[] {90, 20}));
+            check("target score stops when reached",
+                  !Main.shouldPlayRound(4, 1, 100, new int[] {100, 20}));
+            assertEquals("final winner is highest score", 1, Main.finalWinnerIndex(new int[] {80, 120, 90}));
+        }
+
+        // ----------------------------------------------------------------
+        // 16. BOT PRIORITY -- surprising edge case
         // ----------------------------------------------------------------
         {
             ArrayList<Card> h = new ArrayList<>();
@@ -304,7 +369,7 @@ public class CharacterizationTests {
         }
 
         // ----------------------------------------------------------------
-        // 15. END-TO-END GAMEPLAY -- full game with seeded RNG
+        // 17. END-TO-END GAMEPLAY -- full game with seeded RNG
         // ----------------------------------------------------------------
         {
             // A complete bot-only game must finish within the safety limit
@@ -367,6 +432,14 @@ public class CharacterizationTests {
     // ---- helpers ----
 
     private Card card(String token) { return new Card(token); }
+
+    private int count(ArrayList<Card> cards, String token) {
+        int total = 0;
+        for (Card card : cards) {
+            if (card.token.equals(token)) total++;
+        }
+        return total;
+    }
 
     private void check(String label, boolean condition) {
         total++;

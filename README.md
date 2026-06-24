@@ -41,6 +41,12 @@ Run five quiet bot games with a deterministic seed:
 mvn exec:java -Dexec.args="--bots 3 --games 5 --quiet --seed 42"
 ```
 
+Run a multi-round game until a target score:
+
+```bash
+mvn exec:java -Dexec.args="--bots 3 --target-score 500"
+```
+
 Run an interactive game:
 
 ```bash
@@ -57,6 +63,8 @@ G+2  green draw two
 W    wild
 W4   wild draw four
 draw draw a card
+R5 UNO   play red 5 and call UNO
+0 UNO    play card index 0 and call UNO
 ```
 
 Completed games are persisted to H2 automatically.
@@ -172,3 +180,5 @@ scripts/run.sh --bots 3 --games 1
 ## Rules
 
 See `docs/rules.html` for the implemented game rules.
+See `docs/rules-supported.md` for final-project supported rules and documented variants.
+See `docs/final-report.md` for the final project report.

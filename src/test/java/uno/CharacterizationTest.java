@@ -10,6 +10,6 @@ class CharacterizationTest {
     void characterizationSuitePassesThroughMaven() {
         LoggingConfig.disableForTests();
 
-        assertEquals(60, CharacterizationTests.run());
+        assertEquals(75, CharacterizationTests.run());
     }
 }

@@ -62,6 +62,10 @@ public class ConsoleView {
         if (!quiet) System.out.println(name + " says UNO!");
     }
 
+    public void showMissedUnoPenalty(String name) {
+        if (!quiet) System.out.println(name + " missed UNO and draws two penalty cards.");
+    }
+
     public void showWin(String name, int points) {
         if (!quiet) System.out.println(name + " wins and scores " + points);
     }
@@ -104,12 +108,14 @@ public class ConsoleView {
         while (true) {
             if (!quiet) System.out.print("Choose card index/code or draw: ");
             String input = scanner.nextLine().trim().toUpperCase();
+            boolean unoCalled = input.contains("UNO");
+            input = input.replace("UNO", "").trim();
 
             if (input.equals("DRAW")) return PlayChoice.draw();
 
             try {
                 int index = Integer.parseInt(input);
-                if (index >= 0 && index < hand.size()) return PlayChoice.play(index);
+                if (index >= 0 && index < hand.size()) return PlayChoice.play(index, unoCalled);
                 return PlayChoice.invalid();   // out-of-range index -> penalty
             } catch (NumberFormatException ignored) {}
 
@@ -117,7 +123,7 @@ public class ConsoleView {
             for (int i = 0; i < hand.size(); i++) {
                 if (hand.get(i).token.equals(input)) {
                     foundToken = true;
-                    if (rules.isLegal(hand.get(i), upCard, calledColor)) return PlayChoice.play(i);
+                    if (rules.isLegal(hand.get(i), upCard, calledColor)) return PlayChoice.play(i, unoCalled);
                     LOGGER.warning("Invalid input: human selected illegal card token " + input);
                     if (!quiet) System.out.println("That card is not legal.");
                 }

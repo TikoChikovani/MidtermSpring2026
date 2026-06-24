@@ -28,6 +28,7 @@ public class Main {
 
         int     bots   = 3;
         int     games  = 1;
+        int     targetScore = 0;
         boolean human  = false;
         boolean quiet  = false;
         String  report = "";
@@ -37,6 +38,9 @@ public class Main {
         for (int i = 0; i < args.length; i++) {
             if      (args[i].equals("--bots")  && i + 1 < args.length) bots  = Integer.parseInt(args[++i]);
             else if (args[i].equals("--games") && i + 1 < args.length) games = Integer.parseInt(args[++i]);
+            else if (args[i].equals("--target-score") && i + 1 < args.length) {
+                targetScore = Integer.parseInt(args[++i]);
+            }
             else if (args[i].equals("--human"))    human = true;
             else if (args[i].equals("--quiet"))    quiet = true;
             else if (args[i].equals("--seed") && i + 1 < args.length) seed = Long.parseLong(args[++i]);
@@ -49,7 +53,7 @@ public class Main {
                 return;
             }
             else if (args[i].equals("--help")) {
-                System.out.println("Usage: scripts/run.sh [--bots N] [--games N] [--human] [--quiet] [--seed N]");
+                System.out.println("Usage: scripts/run.sh [--bots N] [--games N] [--target-score N] [--human] [--quiet] [--seed N]");
                 System.out.println("Reports: --recent-games [--limit N] | --player-wins | --highest-scores [--limit N]");
                 return;
             }
@@ -77,24 +81,27 @@ public class Main {
         GameController ctrl   = new GameController(state, view);
         PersistedGame  persistedGame = history.startGame(names);
 
-        for (int g = 1; g <= games; g++) {
+        int roundNumber = 1;
+        while (shouldPlayRound(roundNumber, games, targetScore, scores)) {
             int[] beforeRound = Arrays.copyOf(scores, scores.length);
-            view.showGameHeader(g);
-            LOGGER.info("Game start requested: gameNumber=" + g);
+            view.showGameHeader(roundNumber);
+            LOGGER.info("Game start requested: gameNumber=" + roundNumber);
             int winner = ctrl.playGame();
             history.recordRound(
                     persistedGame,
-                    g,
+                    roundNumber,
                     winner,
                     roundPoints(beforeRound, scores),
                     Arrays.copyOf(scores, scores.length)
             );
+            roundNumber++;
         }
+        int completedRounds = roundNumber - 1;
 
         history.completeGame(persistedGame, finalWinnerIndex(scores));
 
         view.showFinalScores(names, scores);
-        LOGGER.info("Game end: completedGames=" + games);
+        LOGGER.info("Game end: completedRounds=" + completedRounds);
     }
 
     // ---- player setup ----
@@ -128,6 +135,19 @@ public class Main {
             if (scores[i] > scores[winner]) winner = i;
         }
         return winner;
+    }
+
+    static boolean shouldPlayRound(int nextRound, int maxRounds, int targetScore, int[] scores) {
+        if (targetScore > 0) return highestScore(scores) < targetScore;
+        return nextRound <= maxRounds;
+    }
+
+    static int highestScore(int[] scores) {
+        int highest = 0;
+        for (int score : scores) {
+            if (score > highest) highest = score;
+        }
+        return highest;
     }
 
     private static void showReport(GameHistoryRepository history, String report, int limit) {
